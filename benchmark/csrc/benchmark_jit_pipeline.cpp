@@ -110,6 +110,16 @@ int main(int argc, const char *argv[]) {
   std::string module_path = argv[1];
   std::string file_path = argv[2];
 
+  // Print all the registered ops
+  auto& ops = torch::jit::getAllOperators();
+  std::cout << "torch jit operators\n";
+  for (auto& op: ops) {
+    auto& name = op->schema().name();
+    if (name.find("torchtext") != std::string::npos)
+      std::cout << "op : " << op->schema().name() << "\n";
+  }
+  std::cout << "\n";
+
   try {
     // Deserialize the ScriptModule from a file using torch::jit::load().
     module = torch::jit::load(module_path);
