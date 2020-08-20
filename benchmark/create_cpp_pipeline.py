@@ -45,7 +45,7 @@ def create_and_save_cpp_pipeline():
     counter = Counter(tokens)
     sorted_by_freq_tuples = sorted(counter.items(), key=lambda x: x[1], reverse=True)
     ordered_dict = OrderedDict(sorted_by_freq_tuples)
-    v_experimental = VocabExperimental(ordered_dict)
+    v_experimental = VocabExperimental(ordered_dict).to_ivalue()
 
     # experimental_basic_english_normalize = BasicEnglishNormalize()
 
