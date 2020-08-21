@@ -3,6 +3,8 @@
 set -e
 
 rm -rf benchmark/csrc/build
+rm -rf build
+rm -rf torchtext/_torchtext.so
 mkdir -p benchmark/csrc/build
 
 (
