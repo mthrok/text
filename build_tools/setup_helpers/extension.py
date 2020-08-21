@@ -17,6 +17,7 @@ _ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
 _CSRC_DIR = _ROOT_DIR / 'torchtext' / 'csrc'
 _TP_BASE_DIR = _ROOT_DIR / 'third_party'
 _TP_INSTALL_DIR = _TP_BASE_DIR / 'build'
+_ENABLE_PYBIND11 = os.environ.get('ENABLE_PYBIND11', '1') == '1'
 
 
 def _get_eca(debug):
@@ -166,6 +167,13 @@ def _configure_third_party(debug):
 _EXT_NAME = 'torchtext._torchtext'
 
 
+def _get_macros():
+    macros = []
+    if _ENABLE_PYBIND11:
+        macros.append(('ENABLE_PYBIND11', None))
+    return macros
+
+
 def get_ext_modules(debug=False):
     return [
         CppExtension(
@@ -176,6 +184,7 @@ def get_ext_modules(debug=False):
             library_dirs=_get_library_dirs(),
             extra_compile_args=_get_eca(debug),
             extra_link_args=_get_ela(debug),
+            define_macros=_get_macros(),
         ),
     ]
 

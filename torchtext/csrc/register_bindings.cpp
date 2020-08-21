@@ -1,5 +1,7 @@
+#ifdef ENABLE_PYBIND11
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#endif // ENABLE_PYBIND11
 #include <regex.h>
 #include <regex_tokenizer.h>
 #include <sentencepiece.h>
@@ -9,6 +11,8 @@
 #include <vocab.h>
 
 namespace torchtext {
+
+#ifdef ENABLE_PYBIND11
 
 namespace py = pybind11;
 // Registers our custom classes with pybind11.
@@ -64,6 +68,8 @@ PYBIND11_MODULE(_torchtext, m) {
         &_load_token_and_vectors_from_file);
   m.def("_load_vocab_from_file", &_load_vocab_from_file);
 }
+
+#endif // ENABLE_PYBIND11
 
 // Registers our custom classes with torch.
 static auto regex =
