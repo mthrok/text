@@ -1,4 +1,5 @@
 #include <torch/script.h> // One-stop header.
+#include <torchtext.h>
 
 #include <chrono>
 #include <ctime>
@@ -99,6 +100,8 @@ void pipeline_benchmark(
 }
 
 int main(int argc, const char *argv[]) {
+  torchtext::init_torchtext();
+
   if (argc != 3) {
     std::cerr
         << "usage: ./benchmark-jit_pipeline <path-to-exported-script-module> "
