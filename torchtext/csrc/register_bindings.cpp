@@ -16,14 +16,38 @@ PYBIND11_MODULE(_torchtext, m) {
   // Classes
   py::class_<Regex>(m, "Regex")
       .def(py::init<std::string>())
-      .def("Sub", &Regex::Sub);
+      .def("Sub", &Regex::Sub)
+      .def(py::pickle(
+          // __getstate__
+          [](const Regex &self) -> std::string { return self.re_str_; },
+          // __setstate__
+          [](std::string state) -> Regex { return Regex(std::move(state)); }));
 
   py::class_<RegexTokenizer>(m, "RegexTokenizer")
       .def_readonly("patterns_", &RegexTokenizer::patterns_)
       .def_readonly("replacements_", &RegexTokenizer::replacements_)
       .def_readonly("to_lower_", &RegexTokenizer::to_lower_)
       .def(py::init<std::vector<std::string>, std::vector<std::string>, bool>())
-      .def("forward", &RegexTokenizer::forward);
+      .def("forward", &RegexTokenizer::forward)
+      .def(py::pickle(
+          // __setstate__
+          [](const RegexTokenizer &self)
+              -> std::tuple<std::vector<std::string>, std::vector<std::string>,
+                            bool> {
+            return std::make_tuple(self.patterns_, self.replacements_,
+                                   self.to_lower_);
+          },
+          // __getstate__
+          [](std::tuple<std::vector<std::string>, std::vector<std::string>,
+                        bool>
+                 states) -> RegexTokenizer {
+            auto patterns = std::get<0>(states);
+            auto replacements = std::get<1>(states);
+            auto to_lower = std::get<2>(states);
+
+            return RegexTokenizer(std::move(patterns), std::move(replacements),
+                                  to_lower);
+          }));
 
   py::class_<SentencePiece>(m, "SentencePiece")
       .def(py::init<std::string>())
@@ -37,7 +61,16 @@ PYBIND11_MODULE(_torchtext, m) {
       .def("GetPieceSize", &SentencePiece::GetPieceSize)
       .def("unk_id", &SentencePiece::unk_id)
       .def("PieceToId", &SentencePiece::PieceToId)
-      .def("IdToPiece", &SentencePiece::IdToPiece);
+      .def("IdToPiece", &SentencePiece::IdToPiece)
+      .def(py::pickle(
+          // __setstate__
+          [](const SentencePiece &self) -> std::string {
+            return self.content_;
+          },
+          // __getstate__
+          [](std::string state) -> SentencePiece {
+            return SentencePiece(state);
+          }));
 
   py::class_<Vectors>(m, "Vectors")
       .def(py::init<std::vector<std::string>, std::vector<int64_t>,
@@ -48,7 +81,17 @@ PYBIND11_MODULE(_torchtext, m) {
       .def("__getitem__", &Vectors::__getitem__)
       .def("lookup_vectors", &Vectors::lookup_vectors)
       .def("__setitem__", &Vectors::__setitem__)
-      .def("__len__", &Vectors::__len__);
+      .def("__len__", &Vectors::__len__)
+      .def(py::pickle(
+          // __setstate__
+          [](const Vectors &self) -> VectorsStates {
+            return _set_vectors_states(self);
+          },
+          // __getstate__
+          [](VectorsStates states) -> Vectors {
+            auto vectors = _get_vectors_from_states(states);
+            return *vectors;
+          }));
 
   py::class_<Vocab>(m, "Vocab")
       .def(py::init<std::vector<std::string>, std::string>())
@@ -62,7 +105,17 @@ PYBIND11_MODULE(_torchtext, m) {
       .def("lookup_tokens", &Vocab::lookup_tokens)
       .def("lookup_indices", &Vocab::lookup_indices)
       .def("get_stoi", &Vocab::get_stoi)
-      .def("get_itos", &Vocab::get_itos);
+      .def("get_itos", &Vocab::get_itos)
+      .def(py::pickle(
+          // __setstate__
+          [](const Vocab &self) -> VocabStates {
+            return _set_vocab_states(self);
+          },
+          // __getstate__
+          [](VocabStates states) -> Vocab {
+            auto vocab = _get_vocab_from_states(states);
+            return *vocab;
+          }));
 
   // Functions
   m.def("_load_token_and_vectors_from_file",
@@ -148,7 +201,7 @@ static auto vocab =
         .def_pickle(
             // __setstate__
             [](const c10::intrusive_ptr<Vocab> &self) -> VocabStates {
-              return _set_vocab_states(self);
+              return _set_vocab_states(*self);
             },
             // __getstate__
             [](VocabStates states) -> c10::intrusive_ptr<Vocab> {
@@ -166,7 +219,7 @@ static auto vectors =
         .def_pickle(
             // __setstate__
             [](const c10::intrusive_ptr<Vectors> &self) -> VectorsStates {
-              return _set_vectors_states(self);
+              return _set_vectors_states(*self);
             },
             // __getstate__
             [](VectorsStates states) -> c10::intrusive_ptr<Vectors> {
