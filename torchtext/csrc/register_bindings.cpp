@@ -49,10 +49,10 @@ PYBIND11_MODULE(_torchtext, m) {
                                   to_lower);
           }));
 
-  py::class_<SentencePiece>(m, "SentencePiece")
+  py::class_<SentencePiece, std::shared_ptr<SentencePiece>>(m, "SentencePiece")
       .def(py::init<std::string>())
       .def("_return_content",
-           [](const SentencePiece &self) { return py::bytes(self.content_); })
+           [](const std::shared_ptr<SentencePiece> &self) { return py::bytes(self->content_); })
       .def("Encode", &SentencePiece::Encode)
       .def("EncodeAsIds", &SentencePiece::EncodeAsIds)
       .def("DecodeIds", &SentencePiece::DecodeIds)
@@ -64,12 +64,13 @@ PYBIND11_MODULE(_torchtext, m) {
       .def("IdToPiece", &SentencePiece::IdToPiece)
       .def(py::pickle(
           // __setstate__
-          [](const SentencePiece &self) -> std::string {
-            return self.content_;
+          [](const std::shared_ptr<SentencePiece> &self) -> py::bytes {
+            return py::bytes(self->content_);
           },
           // __getstate__
-          [](std::string state) -> SentencePiece {
-            return SentencePiece(state);
+          [](py::bytes state) -> std::shared_ptr<SentencePiece> {
+            // std::string state_(state);
+            return std::make_shared<SentencePiece>(std::string(state));
           }));
 
   py::class_<Vectors>(m, "Vectors")
