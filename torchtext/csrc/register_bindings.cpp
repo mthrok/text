@@ -23,6 +23,7 @@ PYBIND11_MODULE(_torchtext, m) {
           // __setstate__
           [](std::string state) -> Regex { return Regex(std::move(state)); }));
 
+  using RegexTokenizerState = std::tuple<std::vector<std::string>, std::vector<std::string>, bool>;
   py::class_<RegexTokenizer>(m, "RegexTokenizer")
       .def_readonly("patterns_", &RegexTokenizer::patterns_)
       .def_readonly("replacements_", &RegexTokenizer::replacements_)
@@ -30,29 +31,21 @@ PYBIND11_MODULE(_torchtext, m) {
       .def(py::init<std::vector<std::string>, std::vector<std::string>, bool>())
       .def("forward", &RegexTokenizer::forward)
       .def(py::pickle(
-          // __setstate__
-          [](const RegexTokenizer &self)
-              -> std::tuple<std::vector<std::string>, std::vector<std::string>,
-                            bool> {
-            return std::make_tuple(self.patterns_, self.replacements_,
-                                   self.to_lower_);
-          },
           // __getstate__
-          [](std::tuple<std::vector<std::string>, std::vector<std::string>,
-                        bool>
-                 states) -> RegexTokenizer {
-            auto patterns = std::get<0>(states);
-            auto replacements = std::get<1>(states);
-            auto to_lower = std::get<2>(states);
-
-            return RegexTokenizer(std::move(patterns), std::move(replacements),
-                                  to_lower);
+          [](const RegexTokenizer &self) -> RegexTokenizerState {
+            return std::make_tuple(self.patterns_, self.replacements_, self.to_lower_);
+          },
+          // __setstate__
+          [](RegexTokenizerState states) -> RegexTokenizer {
+            return RegexTokenizer(
+                std::move(std::get<0>(states)),
+                std::move(std::get<1>(states)),
+                std::get<2>(states));
           }));
 
   py::class_<SentencePiece, std::shared_ptr<SentencePiece>>(m, "SentencePiece")
       .def(py::init<std::string>())
-      .def("_return_content",
-           [](const std::shared_ptr<SentencePiece> &self) { return py::bytes(self->content_); })
+      .def("_return_content", [](const std::shared_ptr<SentencePiece> &self) { return py::bytes(self->content_); })
       .def("Encode", &SentencePiece::Encode)
       .def("EncodeAsIds", &SentencePiece::EncodeAsIds)
       .def("DecodeIds", &SentencePiece::DecodeIds)
@@ -63,13 +56,12 @@ PYBIND11_MODULE(_torchtext, m) {
       .def("PieceToId", &SentencePiece::PieceToId)
       .def("IdToPiece", &SentencePiece::IdToPiece)
       .def(py::pickle(
-          // __setstate__
+          // __getstate__
           [](const std::shared_ptr<SentencePiece> &self) -> py::bytes {
             return py::bytes(self->content_);
           },
-          // __getstate__
+          // __setstate__
           [](py::bytes state) -> std::shared_ptr<SentencePiece> {
-            // std::string state_(state);
             return std::make_shared<SentencePiece>(std::string(state));
           }));
 
@@ -84,11 +76,11 @@ PYBIND11_MODULE(_torchtext, m) {
       .def("__setitem__", &Vectors::__setitem__)
       .def("__len__", &Vectors::__len__)
       .def(py::pickle(
-          // __setstate__
+          // __getstate__
           [](const Vectors &self) -> VectorsStates {
             return _set_vectors_states(self);
           },
-          // __getstate__
+          // __setstate__
           [](VectorsStates states) -> Vectors {
             auto vectors = _get_vectors_from_states(states);
             return *vectors;
